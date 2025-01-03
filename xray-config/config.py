@@ -2,6 +2,7 @@ import base64
 import json
 import os
 import string
+from time import sleep
 
 import requests
 
@@ -252,20 +253,7 @@ xray_config = {
     },
     "dns": None,
     "inbounds": inbounds,
-    "outbounds": [
-        {
-            "tag": "direct",
-            "protocol": "freedom",
-            "settings": {
-              "domainStrategy": "UseIPv4"
-            }
-        },
-        {
-            "tag": "blocked",
-            "protocol": "blackhole",
-            "settings": {}
-        }
-    ],
+    "outbounds": [],
     "transport": None,
     "policy": {
         "levels": {
@@ -292,28 +280,49 @@ xray_config = {
     "fakeDns": None
 }
 
+warps_ready = False
 if os.environ.get('XRAY_OUTBOUND') == 'warp':
-    warp = register_warp()
-    endpoint = find_warp_endpoint()
-    xray_config['outbounds'][0] = {
-        "protocol": "wireguard",
-        "settings": {
-            "reserved": [0, 0, 0],
-            "mtu": 1280,
-            "kernelMode": False,
-            "domainStrategy": "ForceIPv4",
-            "secretKey": warp['privatekey'],
-            "address": warp['addresses'],
-            "peers": [
-                {
-                    "publicKey": warp['pubkey'],
-                    "allowedIPs": [
-                        "0.0.0.0/0",
-                        "::/0"
-                    ],
-                    "endpoint": endpoint
+    warps = []
+    warps.append(register_warp())
+    sleep(2)
+    warps.append(register_warp())
+    sleep(2)
+    warps.append(register_warp())
+    warps_ready = True
+    for i, warp in enumerate(warps):
+        xray_config['outbounds'].append(
+            {
+                "tag": f"warp{i}",
+                "protocol": "freedom",
+                "streamSettings": {
+                    "sockopt": {
+                        "tcpFastOpen": True,
+                        "interface": f"wg{i}"
+                    }
                 }
-            ]
-        },
-        "tag": "direct"
+            }
+        )
+    # xray_config['outbounds'].append({
+    #     "protocol": "loadbalancer",
+    #     "settings": {
+    #         "strategy": "round-robin",
+    #         "actors": [f"wg{i}" for i, warp in enumerate(warps)]
+    #     },
+    #     "tag": "wg-loadbalancer"
+    # })
+
+
+xray_config['outbounds'] += [
+    {
+        "tag": "direct",
+        "protocol": "freedom",
+        "settings": {
+            "domainStrategy": "UseIPv4"
+        }
+    },
+    {
+        "tag": "blocked",
+        "protocol": "blackhole",
+        "settings": {}
     }
+]

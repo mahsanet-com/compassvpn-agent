@@ -1,0 +1,4 @@
+check network ${INTERFACE} with interface ${INTERFACE}
+  if failed link then restart
+  start program = "/usr/bin/wg-quick up ${INTERFACE}"
+  stop program = "/usr/bin/wg-quick down ${INTERFACE}"

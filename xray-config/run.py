@@ -3,7 +3,7 @@ import threading
 import time
 import config
 from utils import get_public_ip, csv_to_dict, exec, get_machine_id, parse_config_link
-from flask import Flask
+from flask import Flask, abort
 
 
 valid_configs = {}
@@ -124,11 +124,15 @@ def get_xray_config():
 def valid_configs():
     return valid_configs
 
-
 @app.route('/subdomain')
 def export_certs():
     return config.direct_subdomain
 
+@app.route('/warps')
+def get_warps():
+    if not config.warps_ready:
+        abort(404)
+    return config.warps
 
 @app.route('/metrics')
 def metrics():
