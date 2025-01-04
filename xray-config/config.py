@@ -194,7 +194,7 @@ inbounds = [{
     "settings": {
         "address": "127.0.0.1"
     },
-    "tag": "api"
+    "tag": "inbound1"
 }]
 if cf_enable:
     inbounds.extend([inbound["inbound"] for inbound in configured_inbounds if inbound.get("cloudflare", False)])
@@ -214,7 +214,7 @@ xray_config = {
             {
                 "type": "field",
                 "inboundTag": [
-                    "api"
+                    "inbound1"
                 ],
                 "outboundTag": "api"
             },
@@ -289,6 +289,19 @@ if os.environ.get('XRAY_OUTBOUND') == 'warp':
     sleep(2)
     warps.append(register_warp())
     warps_ready = True
+    del xray_config['routing']['rules'][0]['outboundTag']
+    xray_config['routing']['rules'][0]['balancerTag'] = "balancer1"
+    xray_config['routing']['balancers'] = [{
+        "tag": "balancer1",
+        "selector": [
+            "warp1",
+            "warp2",
+            "warp3"
+        ],
+        "strategy": {
+            "type": "roundRobin"
+        }
+    }]
     for i, warp in enumerate(warps):
         xray_config['outbounds'].append(
             {

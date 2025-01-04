@@ -1,7 +1,5 @@
 #!/bin/sh
 
-rm /run/*.pid
-
 # xray-config upstream URL
 UPSTREAM_URL="http://xray-config:5000/warps"
 
@@ -22,7 +20,9 @@ WARP_CONFIGS=$(curl -s "$UPSTREAM_URL")
 mkdir -p /etc/wireguard/
 mkdir -p /etc/monit.d/
 
-echo "include /etc/monit.d/*" >> /etc/monitrc
+
+#sed -i 's/^set daemon  30$/set daemon  30 with start delay 60/' /etc/monitrc
+sed -i 's/^#  include \/etc\/monit\.d\/\*$/  include \/etc\/monit.d\/*/' /etc/monitrc
 
 echo $WARP_CONFIGS
 
@@ -43,7 +43,7 @@ echo "$WARP_CONFIGS" | jq -c '.[]' | while read -r item; do
     sed -i "s|\${PUBKEY}|$pubkey|g" "$WG_CONF_PATH"
 
     MONIT_CONF_PATH=/etc/monit.d/wg${counter}
-    cp /monit_template /etc/monit.d/wg${counter}
+    cp /wg_monit /etc/monit.d/wg${counter}
     sed -i "s|\${INTERFACE}|wg${counter}|g" "$MONIT_CONF_PATH"
 
     counter=$((counter + 1))
@@ -64,6 +64,8 @@ else
 fi
 
 curl $XRAY_CONFIG_URL > /etc/xray/config.json
+
+monit --version
 
 monit -I
 

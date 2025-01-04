@@ -1,4 +1,4 @@
-check network ${INTERFACE} with interface ${INTERFACE}
-  if failed link then restart
+check program ${INTERFACE} with path "/bin/ping -c 3 -I ${INTERFACE} 1.1.1.1"
+  if status != 0 then restart
   start program = "/usr/bin/wg-quick up ${INTERFACE}"
   stop program = "/usr/bin/wg-quick down ${INTERFACE}"

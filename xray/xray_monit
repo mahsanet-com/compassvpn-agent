@@ -1,3 +1,4 @@
 check process xray with pidfile "/run/xray.pid"
   start program = "/start_xray.sh"
-  stop program = "/usr/bin/killall start_xray.sh"
+  stop program = "/stop_xray.sh"
+  init 2 cycles
